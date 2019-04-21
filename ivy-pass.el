@@ -2,7 +2,7 @@
 
 ;; Author: ecraven
 ;; URL: https://github.com/ecraven/ivy-pass/
-;; Package-Requires: ((emacs "24") (ivy "0.8.0") (password-store "1.6.5"))
+;; Package-Requires: ((emacs "24") (ivy "0.8.0") (password-store "1.6.5") (auth-source-pass "4.0.0"))
 ;; Version: 0.1
 ;; Keywords: pass, password, convenience, data
 
@@ -29,31 +29,66 @@
 ;;; Code:
 (require 'ivy)
 (require 'password-store)
+(require 'auth-source-pass)
+
+(defgroup ivy-pass nil
+  "Ivy interface for pass."
+  :group 'ivy)
 
 (defvar ivy-pass-map (make-sparse-keymap))
 
-(ivy-set-actions
- 'ivy-pass
- '(("e"
-    ivy-pass--edit-action
-    "edit")
-   ("d"
-    ivy-pass--delete-action
-    "delete")
-   ("a"
-    ivy-pass--add-action
-    "add")
-   ("r"
-    ivy-pass--rename-action
-    "rename")
-   ("g"
-    ivy-pass--generate-action
-    "generate")))
+(defcustom ivy-pass-username-field "username:"
+  "Prefix of the user name field in each file."
+  :group 'ivy-pass)
+
+(defcustom ivy-pass-url-field "url:"
+  "Prefix of the user name field in each file."
+  :group 'ivy-pass)
+
+(defcustom ivy-pass-actions
+  '(("u"
+     ivy-pass--copy-username-action
+     "copy username")
+    ("p"
+     ivy-pass--copy-password-action
+     "copy password")
+    ("e"
+     ivy-pass--edit-action
+     "edit")
+    ("d"
+     ivy-pass--delete-action
+     "delete")
+    ("a"
+     ivy-pass--add-action
+     "add")
+    ("r"
+     ivy-pass--rename-action
+     "rename")
+    ("g"
+     ivy-pass--generate-action
+     "generate"))
+  "List of Ivy action definitions for `ivy-pass' command."
+  :group 'ivy-pass
+  :type '(repeat (list :tag "Ivy action"
+                       (string :tag "key")
+                       (symbol :tag "action")
+                       (string :tag "title")))
+  :set (lambda (name value)
+         (set name value)
+         (ivy-set-actions 'ivy-pass value)))
+
+(defalias 'ivy-pass--get 'auth-source-pass-get)
 
 (defun ivy-pass--add-action (key)
   "Ask for a new key based on KEY, then edit it."
   (let ((new-key (read-string "New key: " key)))
     (password-store-edit new-key)))
+
+(defun ivy-pass--copy-username-action (key)
+  (ivy-pass--get ivy-pass-username-field key))
+
+(defun ivy-pass--copy-password-action (key)
+  (ivy-pass--get ivy-pass-password-field key))
 
 (defun ivy-pass--generate-action (key)
   "Ask for a new key based on KEY, then generate an entry and password for it.
